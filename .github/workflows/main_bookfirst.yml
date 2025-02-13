@@ -1,36 +1,48 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy Node.js app to Azure Web App - bookfirst
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
 
-      - name: npm install, build, and test
+      # 1. Build the frontend
+      - name: Build frontend
         run: |
+          cd Models/frontend
           npm install
-          npm run build --if-present
-          npm run test --if-present
+          npm run build
+          cd ../..
 
+      # 2. Copy dist to backend
+      - name: Copy dist to backend
+        run: |
+          rm -rf Models/backend/frontend_dist
+          cp -r Models/frontend/dist Models/backend/frontend_dist
+
+      # 3. Install backend dependencies
+      - name: Install backend
+        run: |
+          cd Models/backend
+          npm install
+          cd ../..
+
+      # 4. Zip up only the backend folder (now includes frontend_dist)
       - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+        run: zip -r release.zip Models/backend
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -45,8 +57,8 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
@@ -56,19 +68,18 @@ jobs:
 
       - name: Unzip artifact for deployment
         run: unzip release.zip
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4C099125746348C8A2F9A1FC2BDB5C59 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F02D878CB11A40708AC35C699E6CFAC0 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2BDB2F9C779E47B4BF3FCD1A4F5CCFB5 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_XXXX }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_XXXX }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_XXXX }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bookfirst'
           slot-name: 'Production'
-          package: .
-          
+          package: 'Models/backend'

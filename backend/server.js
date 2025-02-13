@@ -133,6 +133,15 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 console.log("4. Routes mounted");
 
+// 3. Serve the frontend build folder
+app.use(express.static(path.join(__dirname, 'frontend_dist')));
+
+// 4. Catch-all route to serve index.html for any non-API request
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend_dist', 'index.html'));
+});
+
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({

@@ -22,27 +22,28 @@ jobs:
       # 1. Build the frontend
       - name: Build frontend
         run: |
-          cd Models/frontend
+          cd frontend
           npm install
           npm run build
-          cd ../..
+          cd ..
 
       # 2. Copy dist to backend
       - name: Copy dist to backend
         run: |
-          rm -rf Models/backend/frontend_dist
-          cp -r Models/frontend/dist Models/backend/frontend_dist
+          rm -rf backend/frontend_dist
+          cp -r frontend/dist backend/frontend_dist
 
       # 3. Install backend dependencies
       - name: Install backend
         run: |
-          cd Models/backend
+          cd backend
           npm install
-          cd ../..
+          cd ..
 
       # 4. Zip up only the backend folder (now includes frontend_dist)
       - name: Zip artifact for deployment
-        run: zip -r release.zip Models/backend
+        run: |
+          zip -r release.zip backend
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -67,7 +68,8 @@ jobs:
           name: node-app
 
       - name: Unzip artifact for deployment
-        run: unzip release.zip
+        run: |
+          unzip release.zip
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -82,4 +84,4 @@ jobs:
         with:
           app-name: 'bookfirst'
           slot-name: 'Production'
-          package: 'Models/backend'
+          package: 'backend'

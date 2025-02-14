@@ -12,7 +12,7 @@ router.post('/generate/:bookingId',
   isAuthenticated, 
   isAdminOrCoAdmin,
   catchAsync(async (req, res) => {
-    const { html, pdfBuffer, invoiceNumber } = await invoiceService.generateInvoice(
+    const { pdfBuffer, invoiceNumber } = await invoiceService.generateInvoice(
       req.params.bookingId,
       req.body
     );
@@ -20,7 +20,6 @@ router.post('/generate/:bookingId',
     res.json({
       status: 'success',
       data: {
-        html,
         invoiceNumber
       }
     });

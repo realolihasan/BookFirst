@@ -4,13 +4,12 @@ const express = require('express');
 const { catchAsync } = require('../middleware/errorMiddleware');
 const { isAuthenticated, isAdminOrCoAdmin } = require('../middleware/authMiddleware');
 const payoutService = require('../services/payoutService');
-const Booking = require('../models/Booking'); // Add this import
+const Booking = require('../models/Booking');
 const { ValidationError } = require('../middleware/errorMiddleware');
 
 const router = express.Router();
 
 // Generate payout statement
-
 router.post('/generate/:bookingId', 
   isAuthenticated, 
   isAdminOrCoAdmin,
@@ -20,7 +19,7 @@ router.post('/generate/:bookingId',
         throw new ValidationError('User ID and percentage are required');
       }
 
-      const { html, pdfBuffer, statementNumber } = await payoutService.generatePayoutStatement(
+      const { pdfBuffer, statementNumber } = await payoutService.generatePayoutStatement(
         req.params.bookingId,
         {
           userId: req.body.userId,
@@ -31,7 +30,6 @@ router.post('/generate/:bookingId',
       res.json({
         status: 'success',
         data: {
-          html,
           statementNumber
         }
       });
@@ -45,21 +43,17 @@ router.post('/generate/:bookingId',
   })
 );
 
-// Download payout statement
-// backend/routes/payoutRoutes.js
-
+// Rest of the routes remain the same
 router.get('/download/:bookingId/:recipientId',
   isAuthenticated,
   catchAsync(async (req, res) => {
     try {
-      // Get the booking with populated payoutStatements
       const booking = await Booking.findById(req.params.bookingId);
       
       if (!booking) {
         throw new ValidationError('Booking not found');
       }
 
-      // Find the statement using direct comparison with recipientId string
       const statement = booking.payoutStatements.find(
         ps => ps.recipientId.toString() === req.params.recipientId
       );
@@ -68,7 +62,6 @@ router.get('/download/:bookingId/:recipientId',
         throw new ValidationError('Payout statement not found');
       }
 
-      // Allow access if user is admin/co-admin OR if user is the recipient
       if (!(req.user.role === 'admin' || 
             req.user.role === 'co_admin' || 
             req.user._id.toString() === req.params.recipientId)) {
@@ -93,7 +86,6 @@ router.get('/download/:bookingId/:recipientId',
   })
 );
 
-// Update payout status
 router.put('/:bookingId/status',
   isAuthenticated,
   isAdminOrCoAdmin,
